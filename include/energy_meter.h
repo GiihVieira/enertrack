@@ -1,64 +1,65 @@
 #pragma once
+
 #include <Arduino.h>
 #include <EmonLib.h>
+
 #include "config.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Energy Measurement (SCT-013 Current Transformer)
-//
-// This module measures AC current using a non-invasive SCT-013 sensor
-// and computes apparent power based on a fixed mains voltage.
-//
-// Required analog front-end on PIN_SCT013:
-//   - Burden resistor: 33Ω (for SCT-013-030, 30A / 1V)
-//   - Voltage divider: 2x 10kΩ (bias at VCC/2 ≈ 1.65V)
-//   - Bypass capacitor: 10µF at bias node (noise stabilization)
-//
-// Notes:
-// - The ESP32 ADC requires input signals within 0–3.3V
-// - The bias ensures proper sampling of the AC waveform (centered signal)
-// ─────────────────────────────────────────────────────────────────────────────
+#define ENERGY_MIN_VALID_IRMS 0.20f
+#define ENERGY_MAX_VALID_IRMS 35.00f
+
 class EnergyMeter {
 public:
-
-    // Initializes the current measurement channel
     void begin() {
+        pinMode(PIN_SCT013, INPUT);
+        analogReadResolution(12);
+
         _emon.current(PIN_SCT013, EMON_CALIBRATION);
 
         Serial.printf(
             "[ENERGY] SCT-013 initialized — pin %d, calibration %.1f\n",
-            PIN_SCT013, EMON_CALIBRATION
+            PIN_SCT013,
+            EMON_CALIBRATION
         );
     }
 
-    // Performs RMS current measurement and computes apparent power
-    //
-    // Execution:
-    // - Call periodically (see ENERGY_READ_INTERVAL_MS)
-    // - Uses EmonLib RMS calculation over EMON_SAMPLES samples
-    void read() {
-        _irms  = _emon.calcIrms(EMON_SAMPLES);
-        _watts = _irms * MAINS_VOLTAGE;  // Apparent power (VA ≈ W for resistive loads)
+    bool read(float voltage) {
+        float irms = _emon.calcIrms(EMON_SAMPLES);
 
-        // Noise filtering:
-        // Values below threshold are treated as no-load condition
-        if (_irms < 0.3f) {
-            _irms  = 0.0f;
-            _watts = 0.0f;
+        if (!isfinite(irms)) {
+            discard("non-finite");
+            return false;
         }
 
+        if (irms < ENERGY_MIN_VALID_IRMS) {
+            _irms = 0.0f;
+            _watts = 0.0f;
+            Serial.println("[ENERGY] No load detected");
+            return true;
+        }
+
+        if (irms > ENERGY_MAX_VALID_IRMS) {
+            discard("out-of-range current");
+            return false;
+        }
+
+        _irms = irms;
+        _watts = _irms * voltage;
+
         Serial.printf(
-            "[ENERGY] Irms: %.2f A | Power: %.1f W\n",
-            _irms, _watts
+            "[ENERGY] Irms: %.3f A | Voltage: %.0f V | Power: %.2f W\n",
+            _irms,
+            voltage,
+            _watts
         );
+
+        return true;
     }
 
-    // Returns RMS current (Amperes)
     float getIrms() const {
         return _irms;
     }
 
-    // Returns computed apparent power (Watts)
     float getWatts() const {
         return _watts;
     }
@@ -66,6 +67,16 @@ public:
 private:
     EnergyMonitor _emon;
 
-    float _irms  = 0.0f;  // RMS current (A)
-    float _watts = 0.0f;  // Apparent power (W)
+    float _irms = 0.0f;
+    float _watts = 0.0f;
+
+    void discard(const char* reason) {
+        _irms = 0.0f;
+        _watts = 0.0f;
+
+        Serial.printf(
+            "[ENERGY] Invalid reading discarded — reason: %s\n",
+            reason
+        );
+    }
 };

@@ -1,104 +1,316 @@
 #pragma once
+
 #include <Arduino.h>
-#include <Preferences.h>   // Arduino wrapper for ESP32 NVS
+#include <Preferences.h>
+
 #include "config.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NVS Manager (Non-Volatile Storage)
-//
-// Provides a simple abstraction layer over ESP32 NVS using Preferences.
-//
-// Responsibilities:
-// - Store and retrieve Wi-Fi credentials
-// - Handle factory reset (namespace clear)
-// - Generate and persist a unique device identifier
-//
-// Notes:
-// - Data is stored under a dedicated namespace (NVS_NAMESPACE)
-// - Preferences automatically handles flash persistence
-// ─────────────────────────────────────────────────────────────────────────────
 class NvsManager {
 public:
 
-    // Stores Wi-Fi credentials in NVS
-    static bool saveWifi(const String& ssid, const String& password) {
+    static bool saveWifi(
+        const String& ssid,
+        const String& password
+    ) {
         Preferences prefs;
 
-        if (!prefs.begin(NVS_NAMESPACE, false)) {
+        if (!prefs.begin(
+                NVS_NAMESPACE,
+                false
+            )) {
             return false;
         }
 
-        prefs.putString(NVS_KEY_SSID, ssid);
-        prefs.putString(NVS_KEY_PASS, password);
+        prefs.putString(
+            NVS_KEY_SSID,
+            ssid
+        );
+
+        prefs.putString(
+            NVS_KEY_PASS,
+            password
+        );
+
         prefs.end();
 
-        Serial.printf("[NVS] Wi-Fi credentials saved — SSID: %s\n", ssid.c_str());
+        Serial.printf(
+            "[NVS] Wi-Fi saved — "
+            "SSID: %s\n",
+            ssid.c_str()
+        );
+
         return true;
     }
 
-    // Loads Wi-Fi credentials from NVS
-    //
-    // Returns:
-    // - true  → valid credentials found
-    // - false → no credentials stored or read failure
-    static bool loadWifi(String& ssid, String& password) {
+    static bool loadWifi(
+        String& ssid,
+        String& password
+    ) {
         Preferences prefs;
 
-        if (!prefs.begin(NVS_NAMESPACE, true)) {  // read-only mode
+        if (!prefs.begin(
+                NVS_NAMESPACE,
+                true
+            )) {
             return false;
         }
 
-        ssid     = prefs.getString(NVS_KEY_SSID, "");
-        password = prefs.getString(NVS_KEY_PASS, "");
+        ssid = prefs.getString(
+            NVS_KEY_SSID,
+            ""
+        );
+
+        password = prefs.getString(
+            NVS_KEY_PASS,
+            ""
+        );
 
         prefs.end();
 
         return ssid.length() > 0;
     }
 
-    // Clears all stored data in the namespace (factory reset)
+    static bool saveConfig(
+        const String& alias,
+        const String& netType,
+        float voltage
+    ) {
+        Preferences prefs;
+
+        if (!prefs.begin(
+                NVS_NAMESPACE,
+                false
+            )) {
+            return false;
+        }
+
+        prefs.putString(
+            NVS_KEY_ALIAS,
+            alias
+        );
+
+        prefs.putString(
+            NVS_KEY_NET_TYPE,
+            netType
+        );
+
+        prefs.putFloat(
+            NVS_KEY_VOLTAGE,
+            voltage
+        );
+
+        prefs.end();
+
+        Serial.printf(
+            "[NVS] Config saved — "
+            "alias:%s netType:%s "
+            "voltage:%.0fV\n",
+            alias.c_str(),
+            netType.c_str(),
+            voltage
+        );
+
+        return true;
+    }
+
+    static String loadAlias() {
+        Preferences prefs;
+
+        prefs.begin(
+            NVS_NAMESPACE,
+            true
+        );
+
+        String v =
+            prefs.getString(
+                NVS_KEY_ALIAS,
+                "EnerTrack"
+            );
+
+        prefs.end();
+
+        return v;
+    }
+
+    static String loadNetType() {
+        Preferences prefs;
+
+        prefs.begin(
+            NVS_NAMESPACE,
+            true
+        );
+
+        String v =
+            prefs.getString(
+                NVS_KEY_NET_TYPE,
+                "mono127"
+            );
+
+        prefs.end();
+
+        return v;
+    }
+
+    static float loadVoltage() {
+        Preferences prefs;
+
+        prefs.begin(
+            NVS_NAMESPACE,
+            true
+        );
+
+        float v =
+            prefs.getFloat(
+                NVS_KEY_VOLTAGE,
+                127.0f
+            );
+
+        prefs.end();
+
+        return v;
+    }
+
+    static void setRegistered(
+        bool registered
+    ) {
+        Preferences prefs;
+
+        prefs.begin(
+            NVS_NAMESPACE,
+            false
+        );
+
+        prefs.putString(
+            NVS_KEY_REGISTERED,
+            registered
+                ? "1"
+                : "0"
+        );
+
+        prefs.end();
+
+        Serial.printf(
+            "[NVS] registered = %s\n",
+            registered
+                ? "true"
+                : "false"
+        );
+    }
+
+    static bool isRegistered() {
+
+        static int8_t cache = -1;
+
+        if (cache >= 0) {
+            return cache == 1;
+        }
+
+        Preferences prefs;
+
+        prefs.begin(
+            NVS_NAMESPACE,
+            true
+        );
+
+        bool keyExists =
+            prefs.isKey(
+                NVS_KEY_REGISTERED
+            );
+
+        if (!keyExists) {
+            prefs.end();
+            cache = 1;
+            Serial.println(
+                "[NVS] 'registered' "
+                "não encontrado — "
+                "assumindo true"
+            );
+            return true;
+        }
+
+        String value =
+            prefs.getString(
+                NVS_KEY_REGISTERED,
+                "1"
+            );
+
+        prefs.end();
+
+        bool result =
+            value == "1";
+
+        cache =
+            result ? 1 : 0;
+
+        return result;
+    }
+
     static void clearAll() {
         Preferences prefs;
 
-        if (prefs.begin(NVS_NAMESPACE, false)) {
+        if (prefs.begin(
+                NVS_NAMESPACE,
+                false
+            )) {
+
             prefs.clear();
             prefs.end();
         }
 
-        Serial.println("[NVS] Namespace cleared — factory reset");
+        Serial.println(
+            "[NVS] Namespace "
+            "cleared — factory reset"
+        );
     }
 
-    // Retrieves or generates a persistent unique device ID
-    //
-    // Strategy:
-    // - If ID exists in NVS → return it
-    // - Otherwise → generate from device MAC address and store it
-    //
-    // Format:
-    // - 12-character hexadecimal string (e.g., "A1B2C3D4E5F6")
     static String getOrCreateDeviceId() {
-        Preferences prefs;
-        prefs.begin(NVS_NAMESPACE, false);
 
-        String id = prefs.getString(NVS_KEY_DEV_ID, "");
+        Preferences prefs;
+
+        prefs.begin(
+            NVS_NAMESPACE,
+            false
+        );
+
+        String id =
+            prefs.getString(
+                NVS_KEY_DEV_ID,
+                ""
+            );
 
         if (id.isEmpty()) {
+
             uint8_t mac[6];
-            esp_read_mac(mac, ESP_MAC_WIFI_STA);
+
+            esp_read_mac(
+                mac,
+                ESP_MAC_WIFI_STA
+            );
 
             char buf[13];
+
             snprintf(
-                buf, sizeof(buf),
+                buf,
+                sizeof(buf),
                 "%02X%02X%02X%02X%02X%02X",
-                mac[0], mac[1], mac[2],
-                mac[3], mac[4], mac[5]
+                mac[0],
+                mac[1],
+                mac[2],
+                mac[3],
+                mac[4],
+                mac[5]
             );
 
             id = String(buf);
-            prefs.putString(NVS_KEY_DEV_ID, id);
+
+            prefs.putString(
+                NVS_KEY_DEV_ID,
+                id
+            );
         }
 
         prefs.end();
+
         return id;
     }
 };
