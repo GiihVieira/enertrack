@@ -39,5 +39,5 @@
 #define ENERGY_POST_INTERVAL_MS    30000UL // 5min
 
 // ─── API Cloud ────────────────────────────────────────────────────────────────
-#define API_READINGS_URL  "https://enertrack-web.giihvieiratwo.workers.dev/api/readings"
-#define API_OTA_URL       "https://enertrack-web.giihvieiratwo.workers.dev/api/ota/latest"
+#define API_READINGS_URL  "https://app.enertrack.site/api/readings"
+#define API_OTA_URL       "https://app.enertrack.site/api/ota/latest"
