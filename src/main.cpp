@@ -25,6 +25,10 @@ static String          gPendingPass;
 static String          gPendingAlias;
 static String          gPendingNetType;
 static float           gPendingVoltage = 127.0f;
+static unsigned long lastOtaCheck   = 0;
+static unsigned long lastEnergyRead = 0;
+static unsigned long lastEnergyPost = 0;
+const  unsigned long OTA_INTERVAL   = 3600000UL;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 void setState(DeviceState next) {
@@ -198,11 +202,6 @@ void setup() {
     setState(DeviceState::BLE_ADVERTISING);
 }
 
-// ─── Loop ─────────────────────────────────────────────────────────────────────
-static unsigned long lastEnergyRead = 0;
-static unsigned long lastOtaCheck   = 0;
-const  unsigned long OTA_INTERVAL   = 3600000UL;
-
 // Verifica botão de factory reset — segurar GPIO0 por 5s
 void checkFactoryReset() {
     if (digitalRead(PIN_FACTORY_RESET) != LOW) return;
@@ -277,12 +276,19 @@ void loop() {
 
         case DeviceState::ONLINE:
             // Leituras periódicas
-            if (millis() - lastEnergyRead >= ENERGY_POST_INTERVAL_MS) {
+            if (millis() - lastEnergyRead >= ENERGY_SAMPLE_INTERVAL_MS) {
                 lastEnergyRead = millis();
-                float voltage = NvsManager::loadVoltage();
 
-                if (gEnergy.read(voltage)) {
+                float voltage = NvsManager::loadVoltage();
+                gEnergy.read(voltage);
+            }
+
+            if (millis() - lastEnergyPost >= ENERGY_POST_INTERVAL_MS) {
+                lastEnergyPost = millis();
+
+                if (gEnergy.hasSamples()) {
                     postReading(gEnergy.getIrms(), gEnergy.getWatts());
+                    gEnergy.clearSamples();
                 }
             }
 

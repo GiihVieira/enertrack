@@ -2,7 +2,7 @@
 
 // ─── Device ───────────────────────────────────────────────────────────────────
 #define DEVICE_NAME_PREFIX   "EnerTrack"
-#define FW_VERSION           "1.0.1"
+#define FW_VERSION           "1.1.0"
 
 // ─── Pinos ────────────────────────────────────────────────────────────────────
 #define PIN_SCT013           34
@@ -13,12 +13,12 @@
 #define MAINS_VOLTAGE        127.0   // alterado via BLE na configuração
 
 // ─── BLE GATT UUIDs ───────────────────────────────────────────────────────────
-#define BLE_SERVICE_UUID          "12345678-1234-1234-1234-123456789abc"
-#define BLE_CHAR_WIFI_SSID_UUID   "12345678-1234-1234-1234-123456789ab1"
-#define BLE_CHAR_WIFI_PASS_UUID   "12345678-1234-1234-1234-123456789ab2"
-#define BLE_CHAR_STATUS_UUID      "12345678-1234-1234-1234-123456789ab3"
-#define BLE_CHAR_ENERGY_UUID      "12345678-1234-1234-1234-123456789ab4"
-#define BLE_CHAR_CONFIG_UUID      "12345678-1234-1234-1234-123456789ab6"  // NOVO: config JSON
+#define BLE_SERVICE_UUID          "260068aa-c6db-4917-99ca-badb5c51f3fc"
+#define BLE_CHAR_WIFI_SSID_UUID   "ac3bfe5c-27e6-4b39-8d94-2fd85a9a02d6"
+#define BLE_CHAR_WIFI_PASS_UUID   "36c71103-c480-4b2c-8fe8-8ca45a22766b"
+#define BLE_CHAR_STATUS_UUID      "d92bd0e1-0951-45e1-9736-50446ddb3946"
+#define BLE_CHAR_ENERGY_UUID      "6d18dfb9-2356-46fd-af05-173d252b830d"
+#define BLE_CHAR_CONFIG_UUID      "50a18a52-a309-4710-9600-a139e45b03ce"  // NOVO: config JSON
 
 // ─── NVS ──────────────────────────────────────────────────────────────────────
 #define NVS_NAMESPACE       "enertrack"
@@ -36,7 +36,7 @@
 
 // ─── Timers ───────────────────────────────────────────────────────────────────
 #define ENERGY_SAMPLE_INTERVAL_MS  10000UL // 10s
-#define ENERGY_POST_INTERVAL_MS    30000UL // 5min
+#define ENERGY_POST_INTERVAL_MS    60000UL // 1min
 
 // ─── API Cloud ────────────────────────────────────────────────────────────────
 #define API_READINGS_URL  "https://app.enertrack.site/api/readings"
