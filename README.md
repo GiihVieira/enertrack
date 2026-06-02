@@ -1,4 +1,4 @@
-# EnerTrack Home — Firmware v1.0.0
+# EnerTrack Home — Firmware v1.1.0
 
 ESP32-based embedded system for electrical energy consumption monitoring.
 BLE onboarding flow inspired by Intelbras Mibo cameras.
@@ -83,15 +83,5 @@ Adjust `EMON_CALIBRATION` in `config.h`:
 1. Measure current using a clamp meter (reference device)
 2. Compare with EnerTrack readings
 3. Adjust `EMON_CALIBRATION` until values match
-
----
-
-## Next Steps
-
-* [ ] Define cloud protocol (MQTT / HTTP REST / Firebase)
-* [ ] Implement data publishing in `ONLINE` state
-* [ ] Develop mobile app for BLE onboarding
-* [ ] Calculate accumulated energy (kWh) and estimated cost
-* [ ] Implement OTA updates over Wi-Fi
 
 ---
